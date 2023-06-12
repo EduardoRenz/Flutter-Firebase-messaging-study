@@ -45,9 +45,44 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   FirebaseMessaging messaging = FirebaseMessaging.instance;
+  NotificationSettings notificationSettings = await messaging.requestPermission(
+    alert: true,
+    announcement: false,
+    badge: true,
+    carPlay: false,
+    criticalAlert: false,
+    provisional: false,
+    sound: true,
+  );
+
+  if ([AuthorizationStatus.authorized, AuthorizationStatus.provisional]
+      .contains(notificationSettings.authorizationStatus)) {
+    await _startPushNotificationHandler(messaging);
+  }
+
+  runApp(App());
+}
+
+Future<void> _startPushNotificationHandler(FirebaseMessaging messaging) async {
   String? token = await messaging.getToken();
   await setPushToken(token);
-  runApp(App());
+
+  // Foreground
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('Got a message whilst in the foreground!');
+    print('Message data: ${message.data}');
+
+    if (message.notification != null) {
+      print('Message also contained a notification: ${message.notification}');
+      print('Body: ${message.notification!.body}');
+    }
+  });
+
+  // Background
+  FirebaseMessaging.onBackgroundMessage((RemoteMessage message) async {
+    print('Got a message whilst in the background!');
+    print('Message data: ${message.data}');
+  });
 }
 
 class App extends StatelessWidget {

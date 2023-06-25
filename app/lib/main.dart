@@ -9,6 +9,8 @@ import 'package:meetups/screens/events_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+final navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> setPushToken(String? token) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String? prefsToken = prefs.getString('pushToken');
@@ -39,6 +41,21 @@ Future<void> setPushToken(String? token) async {
     brand: brand,
   );
   sendDevice(device);
+}
+
+void showMyDialog(String message) {
+  Widget okButton = OutlinedButton(
+      onPressed: () => Navigator.pop(navigatorKey.currentContext!),
+      child: Text('Ok'));
+  AlertDialog alert =
+      AlertDialog(title: Text('Promo'), content: Text(message), actions: [
+    okButton,
+  ]);
+  showDialog(
+      context: navigatorKey.currentContext!,
+      builder: (BuildContext context) {
+        return alert;
+      });
 }
 
 void main() async {
@@ -83,6 +100,12 @@ Future<void> _startPushNotificationHandler(FirebaseMessaging messaging) async {
     print('Got a message whilst in the background!');
     print('Message data: ${message.data}');
   });
+
+// Terminated
+  final notification = await FirebaseMessaging.instance.getInitialMessage();
+  if (notification != null && notification.data['message']?.length > 0) {
+    showMyDialog(notification.data['message']);
+  }
 }
 
 class App extends StatelessWidget {
@@ -92,6 +115,7 @@ class App extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Dev meetups',
       home: EventsScreen(),
+      navigatorKey: navigatorKey,
     );
   }
 }
